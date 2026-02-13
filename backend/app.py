@@ -12,10 +12,10 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-# Create table automatically if not exists
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,6 +25,7 @@ def init_db():
             role TEXT
         )
     """)
+
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS issues (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,13 +39,14 @@ def init_db():
 
     conn.commit()
     conn.close()
-   
+
 @app.route("/")
 def home():
     return jsonify({
         "status": "Backend running",
         "message": "SQLite backend ready"
     })
+
 @app.route("/create-test-user")
 def create_test_user():
     conn = get_db_connection()
@@ -61,9 +63,7 @@ def create_test_user():
         message = "User already exists"
 
     conn.close()
-
     return jsonify({"message": message})
-
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -73,9 +73,22 @@ def login():
 
     conn = get_db_connection()
     cursor = conn.cursor()
+
     cursor.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
     user = cursor.fetchone()
     conn.close()
+
+    if user:
+        return jsonify({
+            "status": "success",
+            "role": user["role"],
+            "message": "Login successful"
+        })
+
+    return jsonify({
+        "status": "error",
+        "message": "Invalid credentials"
+    }), 401
 
 @app.route("/report-issue", methods=["POST"])
 def report_issue():
@@ -108,7 +121,6 @@ def report_issue():
         "message": "Issue reported successfully"
     })
 
-
 @app.route("/issues", methods=["GET"])
 def get_issues():
     conn = get_db_connection()
@@ -131,18 +143,28 @@ def get_issues():
 
     return jsonify(issues)
 
+@app.route("/update-status/<int:issue_id>", methods=["PUT"])
+def update_status(issue_id):
+    data = request.get_json()
+    new_status = data.get("status")
 
-    if user:
+    if not new_status:
         return jsonify({
-            "status": "success",
-            "role": user["role"],
-            "message": "Login successful"
-        })
+            "status": "error",
+            "message": "Status is required"
+        }), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("UPDATE issues SET status=? WHERE id=?", (new_status, issue_id))
+    conn.commit()
+    conn.close()
 
     return jsonify({
-        "status": "error",
-        "message": "Invalid credentials"
-    }), 401
+        "status": "success",
+        "message": "Issue status updated"
+    })
 
 if __name__ == "__main__":
     init_db()
