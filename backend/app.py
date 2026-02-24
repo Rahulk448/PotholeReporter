@@ -1,24 +1,28 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
-import sqlite3
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
 CORS(app)
 
-DATABASE = "pothole.db"
+# Render provides DATABASE_URL automatically
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 
 def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return psycopg2.connect(DATABASE_URL, sslmode="require")
 
+
+# Initialize database tables
 def init_db():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
-    cursor.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             name TEXT,
             email TEXT UNIQUE,
             password TEXT,
@@ -26,35 +30,40 @@ def init_db():
         )
     """)
 
-    cursor.execute("""
+    cur.execute("""
         CREATE TABLE IF NOT EXISTS issues (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             title TEXT,
             description TEXT,
-            latitude REAL,
-            longitude REAL,
+            latitude DOUBLE PRECISION,
+            longitude DOUBLE PRECISION,
+            issue_type TEXT,
+            assigned_department TEXT,
             status TEXT
         )
     """)
 
     conn.commit()
+    cur.close()
     conn.close()
+
 
 @app.route("/")
 def home():
     return jsonify({
         "status": "Backend running",
-        "message": "SQLite backend ready"
+        "message": "PostgreSQL backend ready"
     })
+
 
 @app.route("/create-test-user")
 def create_test_user():
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
     try:
-        cursor.execute(
-            "INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)",
+        cur.execute(
+            "INSERT INTO users (name, email, password, role) VALUES (%s, %s, %s, %s)",
             ("Admin", "admin@gmail.com", "admin123", "admin")
         )
         conn.commit()
@@ -62,8 +71,11 @@ def create_test_user():
     except:
         message = "User already exists"
 
+    cur.close()
     conn.close()
+
     return jsonify({"message": message})
+
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -72,10 +84,15 @@ def login():
     password = data.get("password")
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
 
-    cursor.execute("SELECT * FROM users WHERE email=? AND password=?", (email, password))
-    user = cursor.fetchone()
+    cur.execute(
+        "SELECT * FROM users WHERE email=%s AND password=%s",
+        (email, password)
+    )
+
+    user = cur.fetchone()
+    cur.close()
     conn.close()
 
     if user:
@@ -90,6 +107,7 @@ def login():
         "message": "Invalid credentials"
     }), 401
 
+
 @app.route("/report-issue", methods=["POST"])
 def report_issue():
     data = request.get_json()
@@ -98,22 +116,34 @@ def report_issue():
     description = data.get("description")
     latitude = data.get("latitude")
     longitude = data.get("longitude")
+    issue_type = data.get("issue_type")
 
-    if not title or not description or latitude is None or longitude is None:
+    if not title or not description or latitude is None or longitude is None or not issue_type:
         return jsonify({
             "status": "error",
             "message": "Missing required fields"
         }), 400
 
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    # Auto assign department
+    if issue_type == "traffic_block":
+        department = "traffic_police"
+    elif issue_type == "pothole":
+        department = "pwd"
+    elif issue_type == "vehicle_breakdown":
+        department = "service_provider"
+    else:
+        department = "general"
 
-    cursor.execute("""
-        INSERT INTO issues (title, description, latitude, longitude, status)
-        VALUES (?, ?, ?, ?, ?)
-    """, (title, description, latitude, longitude, "pending"))
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO issues (title, description, latitude, longitude, issue_type, assigned_department, status)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """, (title, description, latitude, longitude, issue_type, department, "pending"))
 
     conn.commit()
+    cur.close()
     conn.close()
 
     return jsonify({
@@ -121,27 +151,26 @@ def report_issue():
         "message": "Issue reported successfully"
     })
 
+
 @app.route("/issues", methods=["GET"])
 def get_issues():
-    conn = get_db_connection()
-    cursor = conn.cursor()
+    department = request.args.get("department")
 
-    cursor.execute("SELECT * FROM issues")
-    rows = cursor.fetchall()
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    if department:
+        cur.execute("SELECT * FROM issues WHERE assigned_department=%s", (department,))
+    else:
+        cur.execute("SELECT * FROM issues")
+
+    issues = cur.fetchall()
+
+    cur.close()
     conn.close()
 
-    issues = []
-    for row in rows:
-        issues.append({
-            "id": row["id"],
-            "title": row["title"],
-            "description": row["description"],
-            "latitude": row["latitude"],
-            "longitude": row["longitude"],
-            "status": row["status"]
-        })
-
     return jsonify(issues)
+
 
 @app.route("/update-status/<int:issue_id>", methods=["PUT"])
 def update_status(issue_id):
@@ -155,16 +184,22 @@ def update_status(issue_id):
         }), 400
 
     conn = get_db_connection()
-    cursor = conn.cursor()
+    cur = conn.cursor()
 
-    cursor.execute("UPDATE issues SET status=? WHERE id=?", (new_status, issue_id))
+    cur.execute(
+        "UPDATE issues SET status=%s WHERE id=%s",
+        (new_status, issue_id)
+    )
+
     conn.commit()
+    cur.close()
     conn.close()
 
     return jsonify({
         "status": "success",
         "message": "Issue status updated"
     })
+
 
 if __name__ == "__main__":
     init_db()
