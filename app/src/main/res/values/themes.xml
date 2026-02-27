@@ -1,0 +1,12 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.RoadGuardian" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+    </style>
+
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/white</item>
+
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+
+        <item name="postSplashScreenTheme">@style/Theme.RoadGuardian</item>
+    </style>
+</resources>
