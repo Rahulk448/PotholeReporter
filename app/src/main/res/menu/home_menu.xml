@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/menu_rate_us"
+        android:title="Rate Us" />
+    <item
+        android:id="@+id/menu_mode_change"
+        android:title="Mode Change (Light/Dark)" />
+    <item
+        android:id="@+id/menu_share_app"
+        android:title="Share App" />
+</menu>

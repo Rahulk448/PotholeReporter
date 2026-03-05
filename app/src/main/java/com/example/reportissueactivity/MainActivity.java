@@ -2,7 +2,9 @@ package com.example.reportissueactivity;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.InputType;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
@@ -23,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     Button loginBtn;
     TextView signupText, forgotPasswordText;
     ImageButton adminLoginBtn;
+    CheckBox showPassword;
     private ApiService apiService;
 
     @Override
@@ -36,8 +39,26 @@ public class MainActivity extends AppCompatActivity {
         signupText = findViewById(R.id.signupText);
         adminLoginBtn = findViewById(R.id.adminLoginBtn);
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
+        showPassword = findViewById(R.id.showPassword);
+
 
         apiService = RetrofitClient.getClient("https://pothole-backend-0je2.onrender.com/").create(ApiService.class);
+
+        // Show / Hide Password
+        showPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
+
+            if (isChecked) {
+                // Show password
+                password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
+            } else {
+                // Hide password
+                password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+            }
+
+            // Keep cursor at end
+            password.setSelection(password.getText().length());
+        });
+
 
         loginBtn.setOnClickListener(v -> {
             loginUser();
