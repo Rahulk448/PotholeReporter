@@ -43,6 +43,15 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import com.example.reportissueactivity.network.ApiService;
+import com.example.reportissueactivity.network.RetrofitClient;
 
 public class ReportIssueActivity extends AppCompatActivity implements OnMapReadyCallback {
     private static final int CAMERA_PERMISSION_CODE = 100;
@@ -154,6 +163,7 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
 
 
     private void submitIssue() {
+
         String selectedIssue = issueTypeSpinner.getSelectedItem().toString();
         String description = issueDescription.getText().toString();
 
@@ -162,20 +172,50 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
             return;
         }
 
-        Bitmap image = null;
-        if (issueImage.getDrawable() != null) {
-            image = ((BitmapDrawable) issueImage.getDrawable()).getBitmap();
-        }
+        Map<String, Object> issueData = new HashMap<>();
+        issueData.put("title", selectedIssue);
+        issueData.put("description", description);
+        issueData.put("latitude", currentLocation.latitude);
+        issueData.put("longitude", currentLocation.longitude);
 
-        Issue issue = new Issue(selectedIssue, description, image, currentLocation);
-        issues.add(issue);
+        // Convert issue type to backend format
+        String issueType = selectedIssue.toLowerCase().replace(" ", "_");
+        issueData.put("issue_type", issueType);
 
-        // Passing issues to ViewissueActivity - This part might need adjustment based on how issues are managed globally
-        Intent intent = new Intent(ReportIssueActivity.this, ViewissueActivity.class);
-        intent.putParcelableArrayListExtra("issues", issues);
-        startActivity(intent);
+        ApiService apiService = RetrofitClient
+                .getClient("https://pothole-backend-0je2.onrender.com/")
+                .create(ApiService.class);
 
-        Toast.makeText(this, "Issue Submitted: " + selectedIssue, Toast.LENGTH_SHORT).show();
+        apiService.reportIssue(issueData).enqueue(new Callback<Map<String, String>>() {
+
+            @Override
+            public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
+
+                if (response.isSuccessful()) {
+
+                    Toast.makeText(ReportIssueActivity.this,
+                            "Issue Reported Successfully",
+                            Toast.LENGTH_LONG).show();
+
+                    Intent intent = new Intent(ReportIssueActivity.this, ViewissueActivity.class);
+                    startActivity(intent);
+
+                } else {
+
+                    Toast.makeText(ReportIssueActivity.this,
+                            "Failed to report issue",
+                            Toast.LENGTH_LONG).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Map<String, String>> call, Throwable t) {
+
+                Toast.makeText(ReportIssueActivity.this,
+                        "Error: " + t.getMessage(),
+                        Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void checkAndFetchLocation() {

@@ -10,15 +10,26 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.reportissueactivity.model.User;
+import com.example.reportissueactivity.network.ApiService;
+import com.example.reportissueactivity.network.RetrofitClient;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class MainActivity extends AppCompatActivity {
-    EditText email,password;
+    EditText email, password;
     Button loginBtn;
     TextView signupText, forgotPasswordText;
     ImageButton adminLoginBtn;
+    private ApiService apiService;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
         loginBtn = findViewById(R.id.loginBtn);
@@ -26,16 +37,15 @@ public class MainActivity extends AppCompatActivity {
         adminLoginBtn = findViewById(R.id.adminLoginBtn);
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
 
+        apiService = RetrofitClient.getClient("https://pothole-backend-0je2.onrender.com/").create(ApiService.class);
+
         loginBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-            startActivity(intent);
-            Toast.makeText(MainActivity.this, "Login Clicked", Toast.LENGTH_SHORT).show();
+            loginUser();
         });
 
         signupText.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SignupActivity.class);
             startActivity(intent);
-            Toast.makeText(MainActivity.this, "Sign Up Clicked", Toast.LENGTH_SHORT).show();
         });
 
         adminLoginBtn.setOnClickListener(v -> {
@@ -46,6 +56,42 @@ public class MainActivity extends AppCompatActivity {
         forgotPasswordText.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ForgotPasswordActivity.class);
             startActivity(intent);
+        });
+    }
+
+    private void loginUser() {
+        String emailInput = email.getText().toString();
+        String passwordInput = password.getText().toString();
+
+        User user = new User(emailInput, passwordInput);
+
+        Call<User> call = apiService.login(user);
+        call.enqueue(new Callback<User>() {
+            @Override
+            public void onResponse(Call<User> call, Response<User> response) {
+
+                    if (response.isSuccessful()) {
+
+                        Toast.makeText(MainActivity.this,
+                                "Login Successful",
+                                Toast.LENGTH_SHORT).show();
+
+                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                        startActivity(intent);
+
+                    } else {
+
+                        Toast.makeText(MainActivity.this,
+                                "Login Failed",
+                                Toast.LENGTH_SHORT).show();
+                    }
+
+            }
+
+            @Override
+            public void onFailure(Call<User> call, Throwable t) {
+                Toast.makeText(MainActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
         });
     }
 }

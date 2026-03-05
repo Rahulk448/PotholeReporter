@@ -12,6 +12,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.gms.maps.model.LatLng;
 
 import java.util.ArrayList;
+import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
+import com.example.reportissueactivity.network.ApiService;
+import com.example.reportissueactivity.network.RetrofitClient;
 
 public class ViewissueActivity extends AppCompatActivity {
     ListView issuesList;
@@ -26,41 +34,61 @@ public class ViewissueActivity extends AppCompatActivity {
         issuesList = findViewById(R.id.issuesList);
         viewOnMapBtn = findViewById(R.id.viewOnMapBtn);
 
-        if (getIntent().hasExtra("issues")) {
-            issues = getIntent().getParcelableArrayListExtra("issues");
-        }
+        ApiService apiService = RetrofitClient
+                .getClient("https://pothole-backend-0je2.onrender.com/")
+                .create(ApiService.class);
 
-        if (issues != null && !issues.isEmpty()) {
-            IssueAdapter adapter = new IssueAdapter(this, issues);
-            issuesList.setAdapter(adapter);
+        apiService.getIssues().enqueue(new Callback<List<Issue>>() {
 
-            issuesList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                    Issue selectedIssue = issues.get(position);
-                    Intent intent = new Intent(ViewissueActivity.this, IssueDetailActivity.class);
-                    intent.putExtra("issue", selectedIssue);
-                    startActivity(intent);
+            @Override
+            public void onResponse(Call<List<Issue>> call, Response<List<Issue>> response) {
+
+                if(response.isSuccessful()){
+
+                    issues = new ArrayList<>(response.body());
+
+                    IssueAdapter adapter = new IssueAdapter(ViewissueActivity.this, issues);
+                    issuesList.setAdapter(adapter);
+
+                    issuesList.setOnItemClickListener((parent, view, position, id) -> {
+
+                        Issue selectedIssue = issues.get(position);
+
+                        Intent intent = new Intent(ViewissueActivity.this, IssueDetailActivity.class);
+                        intent.putExtra("issue", selectedIssue);
+                        startActivity(intent);
+                    });
+
+                    // ADD THIS PART
+                    if(!issues.isEmpty()){
+
+                        viewOnMapBtn.setOnClickListener(v -> {
+
+                            Issue firstIssue = issues.get(0);
+
+                            Intent intent = new Intent(ViewissueActivity.this, MapsActivity.class);
+                            intent.putParcelableArrayListExtra("issues",issues);
+                            startActivity(intent);
+
+
+                        });
+
+                    } else {
+
+                        viewOnMapBtn.setVisibility(View.GONE);
+
+                    }
+
                 }
-            });
 
-            // Assuming the user wants to see the location of the first issue for the map button
-            Issue firstIssue = issues.get(0);
-            LatLng location = firstIssue.getLocation();
 
-            viewOnMapBtn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent(ViewissueActivity.this, MapsActivity.class);
-                    intent.putExtra("lat", location.latitude);
-                    intent.putExtra("lon", location.longitude);
-                    intent.putExtra("place", firstIssue.getIssueType());
-                    startActivity(intent);
-                }
-            });
-        } else {
-            viewOnMapBtn.setVisibility(View.GONE);
-        }
+            }
+
+            @Override
+            public void onFailure(Call<List<Issue>> call, Throwable t) {
+
+            }
+        });
     }
 
     @Override

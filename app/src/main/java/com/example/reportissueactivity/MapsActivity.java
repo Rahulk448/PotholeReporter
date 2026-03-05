@@ -1,7 +1,7 @@
 package com.example.reportissueactivity;
 
 import androidx.fragment.app.FragmentActivity;
-
+import java.util.ArrayList;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -20,20 +20,25 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     String place;
     private GoogleMap mMap;
 
+    ArrayList<Issue> issues;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_maps);
-        lat = getIntent().getDoubleExtra("lat", 0);
-        lon = getIntent().getDoubleExtra("lon", 0);
-        place = getIntent().getStringExtra("place");
-        // Obtain the SupportMapFragment and get notified when the map is ready to be used.
+
+        // Receive all issues from previous screen
+        issues = getIntent().getParcelableArrayListExtra("issues");
+
+        // Load the map
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
-        mapFragment.getMapAsync(this);
-    }
 
+        if (mapFragment != null) {
+            mapFragment.getMapAsync(this);
+        }
+    }
     /**
      * Manipulates the map once available.
      * This callback is triggered when the map is ready to be used.
@@ -45,13 +50,23 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+
         mMap = googleMap;
 
-        // Add a marker in Sydney and move the camera
-        LatLng location = new LatLng(lat, lon);
-        mMap.addMarker(new MarkerOptions().position(location).title(place));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
-        mMap.setOnMarkerClickListener(this);
+        if (issues != null && !issues.isEmpty()) {
+
+            for (Issue issue : issues) {
+
+                LatLng location = issue.getLocation();
+
+                mMap.addMarker(new MarkerOptions()
+                        .position(location)
+                        .title(issue.getIssueType()));
+            }
+
+            LatLng first = issues.get(0).getLocation();
+            mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(first, 12));
+        }
     }
 
     @Override
