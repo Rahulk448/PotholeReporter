@@ -6,7 +6,6 @@ import android.text.InputType;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -24,7 +23,6 @@ public class MainActivity extends AppCompatActivity {
     EditText email, password;
     Button loginBtn;
     TextView signupText, forgotPasswordText;
-    ImageButton adminLoginBtn;
     CheckBox showPassword;
     private ApiService apiService;
 
@@ -37,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
         password = findViewById(R.id.password);
         loginBtn = findViewById(R.id.loginBtn);
         signupText = findViewById(R.id.signupText);
-        adminLoginBtn = findViewById(R.id.adminLoginBtn);
+
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
         showPassword = findViewById(R.id.showPassword);
 
@@ -69,10 +67,8 @@ public class MainActivity extends AppCompatActivity {
             startActivity(intent);
         });
 
-        adminLoginBtn.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, AdminLoginActivity.class);
-            startActivity(intent);
-        });
+
+
 
         forgotPasswordText.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ForgotPasswordActivity.class);

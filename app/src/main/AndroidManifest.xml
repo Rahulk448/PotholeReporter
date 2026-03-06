@@ -23,7 +23,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDE8RzUPYl0RtQY1L1SRP6cmVwjMb2Tmrg" />
+            android:value="YOUR_API_KEY_MAP" />
 
         <activity
             android:name=".MainActivity"
@@ -41,7 +41,6 @@
         <activity android:name=".MapsActivity" />
         <activity android:name=".IssueDetailActivity" />
         <activity android:name=".MapActivity" />
-        <activity android:name=".AdminLoginActivity" />
         <activity android:name=".ForgotPasswordActivity" />
         <activity android:name=".ViewStatusActivity" />
     </application>

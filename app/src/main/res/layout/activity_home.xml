@@ -71,7 +71,7 @@
         android:layout_marginStart="16dp"
         android:layout_marginTop="16dp"
         android:padding="12dp"
-        android:src="@drawable/ic_issue"
+        android:src="@drawable/ic_menu"
         android:elevation="4dp"
         android:contentDescription="Menu Button"
         app:layout_constraintStart_toStartOf="parent"
