@@ -15,6 +15,7 @@ import com.example.reportissueactivity.network.ApiService;
 import com.example.reportissueactivity.network.RetrofitClient;
 
 import java.io.IOException;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -61,36 +62,46 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // Departmental Admin Check
+        if (emailInput.equals("pwd@road.com") && passwordInput.equals("pwd123")) {
+            startAdminHome("PWD");
+            return;
+        } else if (emailInput.equals("police@traffic.com") && passwordInput.equals("police123")) {
+            startAdminHome("Police");
+            return;
+        } else if (emailInput.equals("others@road.com") && passwordInput.equals("others123")) {
+            startAdminHome("Others");
+            return;
+        }
+
         // Regular User API Login
         User user = new User(emailInput, passwordInput);
-        Call<User> call = apiService.login(user);
-        call.enqueue(new Callback<User>() {
+        Call<Map<String, Object>> call = apiService.login(user);
+        call.enqueue(new Callback<Map<String, Object>>() {
             @Override
-            public void onResponse(Call<User> call, Response<User> response) {
+            public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
                 if (response.isSuccessful()) {
                     Toast.makeText(MainActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(MainActivity.this, HomeActivity.class);
                     startActivity(intent);
                     finish();
                 } else {
-                    String errorMsg = "Login Failed: " + response.code();
-                    try {
-                        if (response.errorBody() != null) {
-                            errorMsg += " - " + response.errorBody().string();
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                    Log.e("LoginActivity", errorMsg);
-                    Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "Login Failed: Invalid Credentials", Toast.LENGTH_SHORT).show();
                 }
             }
 
             @Override
-            public void onFailure(Call<User> call, Throwable t) {
-                Log.e("LoginActivity", "Network Error: " + t.getMessage());
+            public void onFailure(Call<Map<String, Object>> call, Throwable t) {
                 Toast.makeText(MainActivity.this, "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void startAdminHome(String department) {
+        Toast.makeText(this, "Admin Login: " + department, Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(MainActivity.this, AdminHomeActivity.class);
+        intent.putExtra("DEPARTMENT", department);
+        startActivity(intent);
+        finish();
     }
 }

@@ -8,14 +8,18 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
 import android.graphics.drawable.BitmapDrawable;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.provider.Settings;
+import android.util.Base64;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
@@ -48,9 +52,13 @@ import com.google.android.gms.tasks.CancellationTokenSource;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.textfield.TextInputLayout;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.HashMap;
 
@@ -65,19 +73,22 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
     private static final int CAMERA_PERMISSION_CODE = 100;
     private static final int LOCATION_PERMISSION_REQUEST_CODE = 101;
     AutoCompleteTextView issueTypeSpinner;
-    EditText issueDescription;
+    EditText issueDescription, otherIssueInput;
+    TextInputLayout otherIssueLayout;
     Button submitIssueBtn;
     ImageView issueImage;
     MapView mapView;
     private GoogleMap googleMap;
     private FusedLocationProviderClient fusedLocationClient;
     private LatLng currentLocation;
+    private String currentLocationName = "Unknown Location";
     private ArrayList<Issue> issues = new ArrayList<>();
     private CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
     private ActivityResultLauncher<Intent> cameraLauncher;
     private ActivityResultLauncher<Intent> galleryLauncher;
     private DrawerLayout drawerLayout;
+    private Bitmap selectedBitmap = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -117,6 +128,8 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
         });
 
         issueTypeSpinner = findViewById(R.id.issueTypeSpinner);
+        otherIssueLayout = findViewById(R.id.otherIssueLayout);
+        otherIssueInput = findViewById(R.id.otherIssueInput);
         issueDescription = findViewById(R.id.issueDescription);
         submitIssueBtn = findViewById(R.id.submitIssueBtn);
         issueImage = findViewById(R.id.issueImage);
@@ -131,6 +144,15 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
         ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_dropdown_item_1line, issueTypes);
         issueTypeSpinner.setAdapter(adapter);
 
+        issueTypeSpinner.setOnItemClickListener((parent, view, position, id) -> {
+            String selection = adapter.getItem(position);
+            if ("Others".equals(selection)) {
+                otherIssueLayout.setVisibility(View.VISIBLE);
+            } else {
+                otherIssueLayout.setVisibility(View.GONE);
+            }
+        });
+
         // Camera Launcher
         cameraLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
@@ -138,9 +160,9 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
                     if (result.getResultCode() == RESULT_OK) {
                         Intent data = result.getData();
                         if (data != null && data.getExtras() != null) {
-                            Bitmap photo = (Bitmap) data.getExtras().get("data");
-                            issueImage.setImageBitmap(photo);
-                            issueImage.setPadding(0, 0, 0, 0); // Remove padding when image is set
+                            selectedBitmap = (Bitmap) data.getExtras().get("data");
+                            issueImage.setImageBitmap(selectedBitmap);
+                            issueImage.setPadding(0, 0, 0, 0);
                         }
                     }
                 });
@@ -154,14 +176,13 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
                         if (data != null && data.getData() != null) {
                             Uri imageUri = data.getData();
                             try {
-                                Bitmap bitmap;
                                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                                    bitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), imageUri));
+                                    selectedBitmap = ImageDecoder.decodeBitmap(ImageDecoder.createSource(getContentResolver(), imageUri));
                                 } else {
-                                    bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                                    selectedBitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
                                 }
-                                issueImage.setImageBitmap(bitmap);
-                                issueImage.setPadding(0, 0, 0, 0); // Remove padding when image is set
+                                issueImage.setImageBitmap(selectedBitmap);
+                                issueImage.setPadding(0, 0, 0, 0);
                             } catch (IOException e) {
                                 e.printStackTrace();
                                 Toast.makeText(this, "Failed to load image", Toast.LENGTH_SHORT).show();
@@ -173,6 +194,20 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
         issueImage.setOnClickListener(v -> showUploadOptions());
 
         submitIssueBtn.setOnClickListener(v -> submitIssue());
+    }
+
+    private void getAddressFromLatLng(LatLng latLng) {
+        Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+        try {
+            List<Address> addresses = geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1);
+            if (addresses != null && !addresses.isEmpty()) {
+                Address address = addresses.get(0);
+                currentLocationName = address.getAddressLine(0);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            currentLocationName = "Lat: " + latLng.latitude + ", Lon: " + latLng.longitude;
+        }
     }
 
     private void rateApp() {
@@ -251,6 +286,15 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
             return;
         }
 
+        if ("Others".equals(selectedIssue)) {
+            String otherDetail = otherIssueInput.getText().toString().trim();
+            if (otherDetail.isEmpty()) {
+                Toast.makeText(this, "Please specify the issue", Toast.LENGTH_SHORT).show();
+                return;
+            }
+            selectedIssue = "Other: " + otherDetail;
+        }
+
         if (currentLocation == null) {
             Toast.makeText(this, "Location not available. Please fetch location first.", Toast.LENGTH_SHORT).show();
             return;
@@ -261,9 +305,14 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
         issueData.put("description", description);
         issueData.put("latitude", currentLocation.latitude);
         issueData.put("longitude", currentLocation.longitude);
+        issueData.put("location_name", currentLocationName);
 
         String issueType = selectedIssue.toLowerCase().replace(" ", "_");
         issueData.put("issue_type", issueType);
+
+        if (selectedBitmap != null) {
+            issueData.put("image", encodeImage(selectedBitmap));
+        }
 
         ApiService apiService = RetrofitClient
                 .getClient("https://pothole-backend-0je2.onrender.com/")
@@ -286,6 +335,13 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
                 Toast.makeText(ReportIssueActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    private String encodeImage(Bitmap bitmap) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 70, baos);
+        byte[] imageBytes = baos.toByteArray();
+        return Base64.encodeToString(imageBytes, Base64.DEFAULT);
     }
 
     private void checkAndFetchLocation() {
@@ -314,8 +370,9 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
                     .addOnSuccessListener(this, location -> {
                         if (location != null) {
                             currentLocation = new LatLng(location.getLatitude(), location.getLongitude());
+                            getAddressFromLatLng(currentLocation);
                             googleMap.clear();
-                            googleMap.addMarker(new MarkerOptions().position(currentLocation).title("Current Location"));
+                            googleMap.addMarker(new MarkerOptions().position(currentLocation).title(currentLocationName));
                             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(currentLocation, 15));
                         } else {
                             Toast.makeText(this, "Could not retrieve location. Please ensure location is enabled and try again.", Toast.LENGTH_LONG).show();

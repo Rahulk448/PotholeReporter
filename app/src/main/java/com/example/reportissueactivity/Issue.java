@@ -8,6 +8,12 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.annotations.SerializedName;
 
 public class Issue implements Parcelable {
+    @SerializedName("_id")
+    private String mongoId;
+
+    @SerializedName("id")
+    private String simpleId;
+
     @SerializedName("issue_type")
     private String issueType;
     
@@ -21,6 +27,9 @@ public class Issue implements Parcelable {
     
     @SerializedName("longitude")
     private double longitude;
+
+    @SerializedName("location_name")
+    private String locationName;
     
     @SerializedName("status")
     private String status;
@@ -37,11 +46,14 @@ public class Issue implements Parcelable {
     }
 
     protected Issue(Parcel in) {
+        mongoId = in.readString();
+        simpleId = in.readString();
         issueType = in.readString();
         description = in.readString();
         image = in.readParcelable(Bitmap.class.getClassLoader());
         latitude = in.readDouble();
         longitude = in.readDouble();
+        locationName = in.readString();
         status = in.readString();
     }
 
@@ -56,6 +68,10 @@ public class Issue implements Parcelable {
             return new Issue[size];
         }
     };
+
+    public String getId() {
+        return mongoId != null ? mongoId : simpleId;
+    }
 
     public String getIssueType() {
         return issueType;
@@ -73,6 +89,14 @@ public class Issue implements Parcelable {
         return new LatLng(latitude, longitude);
     }
 
+    public String getLocationName() {
+        return locationName;
+    }
+
+    public void setLocationName(String locationName) {
+        this.locationName = locationName;
+    }
+
     public String getStatus() {
         return status != null ? status : "Pending";
     }
@@ -88,11 +112,14 @@ public class Issue implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
+        dest.writeString(mongoId);
+        dest.writeString(simpleId);
         dest.writeString(issueType);
         dest.writeString(description);
         dest.writeParcelable(image, flags);
         dest.writeDouble(latitude);
         dest.writeDouble(longitude);
+        dest.writeString(locationName);
         dest.writeString(status);
     }
 }
