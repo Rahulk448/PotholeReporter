@@ -2,9 +2,8 @@ package com.example.reportissueactivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.InputType;
+import android.util.Log;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -15,6 +14,8 @@ import com.example.reportissueactivity.model.User;
 import com.example.reportissueactivity.network.ApiService;
 import com.example.reportissueactivity.network.RetrofitClient;
 
+import java.io.IOException;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -23,7 +24,6 @@ public class MainActivity extends AppCompatActivity {
     EditText email, password;
     Button loginBtn;
     TextView signupText, forgotPasswordText;
-    CheckBox showPassword;
     private ApiService apiService;
 
     @Override
@@ -35,40 +35,16 @@ public class MainActivity extends AppCompatActivity {
         password = findViewById(R.id.password);
         loginBtn = findViewById(R.id.loginBtn);
         signupText = findViewById(R.id.signupText);
-
         forgotPasswordText = findViewById(R.id.forgotPasswordText);
-        showPassword = findViewById(R.id.showPassword);
-
 
         apiService = RetrofitClient.getClient("https://pothole-backend-0je2.onrender.com/").create(ApiService.class);
 
-        // Show / Hide Password
-        showPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
-
-            if (isChecked) {
-                // Show password
-                password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD);
-            } else {
-                // Hide password
-                password.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-            }
-
-            // Keep cursor at end
-            password.setSelection(password.getText().length());
-        });
-
-
-        loginBtn.setOnClickListener(v -> {
-            loginUser();
-        });
+        loginBtn.setOnClickListener(v -> loginUser());
 
         signupText.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, SignupActivity.class);
             startActivity(intent);
         });
-
-
-
 
         forgotPasswordText.setOnClickListener(v -> {
             Intent intent = new Intent(MainActivity.this, ForgotPasswordActivity.class);
@@ -77,37 +53,43 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void loginUser() {
-        String emailInput = email.getText().toString();
-        String passwordInput = password.getText().toString();
+        String emailInput = email.getText().toString().trim();
+        String passwordInput = password.getText().toString().trim();
 
+        if (emailInput.isEmpty() || passwordInput.isEmpty()) {
+            Toast.makeText(this, "Please enter email and password", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Regular User API Login
         User user = new User(emailInput, passwordInput);
-
         Call<User> call = apiService.login(user);
         call.enqueue(new Callback<User>() {
             @Override
             public void onResponse(Call<User> call, Response<User> response) {
-
-                    if (response.isSuccessful()) {
-
-                        Toast.makeText(MainActivity.this,
-                                "Login Successful",
-                                Toast.LENGTH_SHORT).show();
-
-                        Intent intent = new Intent(MainActivity.this, HomeActivity.class);
-                        startActivity(intent);
-
-                    } else {
-
-                        Toast.makeText(MainActivity.this,
-                                "Login Failed",
-                                Toast.LENGTH_SHORT).show();
+                if (response.isSuccessful()) {
+                    Toast.makeText(MainActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
+                    Intent intent = new Intent(MainActivity.this, HomeActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    String errorMsg = "Login Failed: " + response.code();
+                    try {
+                        if (response.errorBody() != null) {
+                            errorMsg += " - " + response.errorBody().string();
+                        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
                     }
-
+                    Log.e("LoginActivity", errorMsg);
+                    Toast.makeText(MainActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                }
             }
 
             @Override
             public void onFailure(Call<User> call, Throwable t) {
-                Toast.makeText(MainActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("LoginActivity", "Network Error: " + t.getMessage());
+                Toast.makeText(MainActivity.this, "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
     }

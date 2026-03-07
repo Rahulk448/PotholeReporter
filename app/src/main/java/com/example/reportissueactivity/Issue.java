@@ -5,58 +5,44 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.android.gms.maps.model.LatLng;
+import com.google.gson.annotations.SerializedName;
 
 public class Issue implements Parcelable {
-
-    // Fields received from backend JSON
-    private String title;
+    @SerializedName("issue_type")
+    private String issueType;
+    
+    @SerializedName("description")
     private String description;
+    
+    private Bitmap image;
+    
+    @SerializedName("latitude")
     private double latitude;
+    
+    @SerializedName("longitude")
     private double longitude;
-    private String issue_type;
+    
+    @SerializedName("status")
     private String status;
 
-    // Fields used in Android UI
-    private Bitmap image;
-    private LatLng location;
-
-    // Constructor used when reporting issue locally
     public Issue(String issueType, String description, Bitmap image, LatLng location) {
-        this.issue_type = issueType;
+        this.issueType = issueType;
         this.description = description;
         this.image = image;
-        this.location = location;
-
         if (location != null) {
             this.latitude = location.latitude;
             this.longitude = location.longitude;
         }
-
         this.status = "Pending";
-        this.title = issueType;
-    }
-
-    // Constructor used by Retrofit when loading from backend
-    public Issue(String title, String description, double latitude, double longitude, String issue_type, String status) {
-        this.title = title;
-        this.description = description;
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.issue_type = issue_type;
-        this.status = status;
-
-        this.location = new LatLng(latitude, longitude);
     }
 
     protected Issue(Parcel in) {
-        title = in.readString();
+        issueType = in.readString();
         description = in.readString();
+        image = in.readParcelable(Bitmap.class.getClassLoader());
         latitude = in.readDouble();
         longitude = in.readDouble();
-        issue_type = in.readString();
         status = in.readString();
-        image = in.readParcelable(Bitmap.class.getClassLoader());
-        location = in.readParcelable(LatLng.class.getClassLoader());
     }
 
     public static final Creator<Issue> CREATOR = new Creator<Issue>() {
@@ -71,12 +57,8 @@ public class Issue implements Parcelable {
         }
     };
 
-    public String getTitle() {
-        return title;
-    }
-
     public String getIssueType() {
-        return issue_type;
+        return issueType;
     }
 
     public String getDescription() {
@@ -88,22 +70,11 @@ public class Issue implements Parcelable {
     }
 
     public LatLng getLocation() {
-        if (location == null) {
-            location = new LatLng(latitude, longitude);
-        }
-        return location;
-    }
-
-    public double getLatitude() {
-        return latitude;
-    }
-
-    public double getLongitude() {
-        return longitude;
+        return new LatLng(latitude, longitude);
     }
 
     public String getStatus() {
-        return status;
+        return status != null ? status : "Pending";
     }
 
     public void setStatus(String status) {
@@ -117,13 +88,11 @@ public class Issue implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-        dest.writeString(title);
+        dest.writeString(issueType);
         dest.writeString(description);
+        dest.writeParcelable(image, flags);
         dest.writeDouble(latitude);
         dest.writeDouble(longitude);
-        dest.writeString(issue_type);
         dest.writeString(status);
-        dest.writeParcelable(image, flags);
-        dest.writeParcelable(location, flags);
     }
 }
