@@ -19,6 +19,9 @@ public interface ApiService {
     @POST("/report-issue")
     Call<Map<String, String>> reportIssue(@Body Map<String, Object> issueData);
 
+    @POST("signup")
+    Call<User> signup(@Body User user);
+
     @GET("issues")
     Call<List<Issue>> getIssues();
 }
