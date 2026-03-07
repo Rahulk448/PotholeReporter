@@ -2,10 +2,7 @@ package com.example.reportissueactivity;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.text.method.HideReturnsTransformationMethod;
-import android.text.method.PasswordTransformationMethod;
 import android.widget.Button;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -22,7 +19,6 @@ import retrofit2.Response;
 public class SignupActivity extends AppCompatActivity {
 
     EditText name, email, password, confirmPassword;
-    CheckBox showPassword;
     Button signupBtn;
     ApiService apiService;
 
@@ -39,20 +35,10 @@ public class SignupActivity extends AppCompatActivity {
         email = findViewById(R.id.email);
         password = findViewById(R.id.password);
         confirmPassword = findViewById(R.id.confirmPassword);
-        showPassword = findViewById(R.id.showPassword);
         signupBtn = findViewById(R.id.signupBtn);
 
-        showPassword.setOnCheckedChangeListener((buttonView, isChecked) -> {
-            if (isChecked) {
-                password.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
-                confirmPassword.setTransformationMethod(HideReturnsTransformationMethod.getInstance());
-            } else {
-                password.setTransformationMethod(PasswordTransformationMethod.getInstance());
-                confirmPassword.setTransformationMethod(PasswordTransformationMethod.getInstance());
-            }
-        });
-
         signupBtn.setOnClickListener(v -> {
+
 
             String nameInput = name.getText().toString().trim();
             String emailInput = email.getText().toString().trim();

@@ -9,36 +9,43 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
-import androidx.appcompat.view.ContextThemeWrapper;
-import androidx.appcompat.widget.PopupMenu;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.navigation.NavigationView;
 
 public class HomeActivity extends AppCompatActivity {
+
+    private DrawerLayout drawerLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_home);
 
+        drawerLayout = findViewById(R.id.drawer_layout);
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        ImageView menuBtn = findViewById(R.id.menuBtn);
+
         Button reportIssueBtn = findViewById(R.id.reportIssueBtn);
         Button viewIssuesBtn = findViewById(R.id.viewIssuesBtn);
         Button viewStatusBtn = findViewById(R.id.viewStatusBtn);
         Button logoutBtn = findViewById(R.id.logoutBtn);
-        ImageView menuBtn = findViewById(R.id.menuBtn);
 
         menuBtn.setOnClickListener(v -> {
-            // Apply the custom style for blue background and white text
-            ContextThemeWrapper wrapper = new ContextThemeWrapper(this, R.style.CustomPopupMenuTheme);
-            PopupMenu popupMenu = new PopupMenu(wrapper, menuBtn);
-            popupMenu.getMenuInflater().inflate(R.menu.home_menu, popupMenu.getMenu());
-            popupMenu.setOnMenuItemClickListener(item -> {
+            drawerLayout.openDrawer(GravityCompat.START);
+        });
+
+        navigationView.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 int id = item.getItemId();
                 if (id == R.id.menu_rate_us) {
                     rateApp();
-                    return true;
                 } else if (id == R.id.menu_mode_change) {
                     int currentMode = AppCompatDelegate.getDefaultNightMode();
                     if (currentMode == AppCompatDelegate.MODE_NIGHT_YES) {
@@ -46,21 +53,18 @@ public class HomeActivity extends AppCompatActivity {
                     } else {
                         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
                     }
-                    return true;
                 } else if (id == R.id.menu_share_app) {
                     Intent shareIntent = new Intent(Intent.ACTION_SEND);
                     shareIntent.setType("text/plain");
                     shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Road Guardian App");
                     shareIntent.putExtra(Intent.EXTRA_TEXT, "Check out this app to report road issues: https://play.google.com/store/apps/details?id=" + getPackageName());
                     startActivity(Intent.createChooser(shareIntent, "Share via"));
-                    return true;
                 } else if (id == R.id.menu_contact_us) {
                     showContactDialog();
-                    return true;
                 }
-                return false;
-            });
-            popupMenu.show();
+                drawerLayout.closeDrawer(GravityCompat.START);
+                return true;
+            }
         });
 
         reportIssueBtn.setOnClickListener(v -> {
