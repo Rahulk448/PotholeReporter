@@ -32,15 +32,30 @@ public class IssueAdapter extends ArrayAdapter<Issue> {
         TextView issueTypeTextView = convertView.findViewById(R.id.issueTypeTextView);
         TextView issueDescriptionTextView = convertView.findViewById(R.id.issueDescriptionTextView);
         TextView locationTextView = convertView.findViewById(R.id.locationTextView);
+        TextView issueDateTextView = convertView.findViewById(R.id.issueDateTextView);
 
         if (issue != null) {
-            issueImageView.setImageBitmap(issue.getImage());
+            if (issue.getImage() != null) {
+                issueImageView.setImageBitmap(issue.getImage());
+                issueImageView.setVisibility(View.VISIBLE);
+            } else {
+                issueImageView.setVisibility(View.GONE);
+            }
+            
             issueTypeTextView.setText(issue.getIssueType());
             issueDescriptionTextView.setText(issue.getDescription());
+            
             if (issue.getLocation() != null) {
                 locationTextView.setText("Lat: " + issue.getLocation().latitude + ", Lon: " + issue.getLocation().longitude);
             } else {
                 locationTextView.setText("Location not available");
+            }
+
+            if (issue.getCreatedAt() != null) {
+                issueDateTextView.setText("Reported: " + issue.getCreatedAt());
+                issueDateTextView.setVisibility(View.VISIBLE);
+            } else {
+                issueDateTextView.setVisibility(View.GONE);
             }
         }
 

@@ -41,8 +41,9 @@ public class AdminIssueAdapter extends ArrayAdapter<Issue> {
 
         ImageView issueImageView = convertView.findViewById(R.id.issueImageView);
         TextView typeText = convertView.findViewById(R.id.issueTypeTextView);
-        TextView locationText = convertView.findViewById(R.id.issueLocationTextView); // NEW
+        TextView locationText = convertView.findViewById(R.id.issueLocationTextView);
         TextView statusText = convertView.findViewById(R.id.issueStatusTextView);
+        TextView dateText = convertView.findViewById(R.id.issueDateTextView);
         Button updateBtn = convertView.findViewById(R.id.updateStatusBtn);
 
         if (issue != null) {
@@ -67,6 +68,14 @@ public class AdminIssueAdapter extends ArrayAdapter<Issue> {
             }
 
             statusText.setText("Status: " + issue.getStatus());
+
+            // Display reported date
+            if (issue.getCreatedAt() != null) {
+                dateText.setText("Reported: " + issue.getCreatedAt());
+                dateText.setVisibility(View.VISIBLE);
+            } else {
+                dateText.setVisibility(View.GONE);
+            }
 
             String nextStatus = "Pending".equalsIgnoreCase(issue.getStatus()) ? "Resolved" : "Pending";
             updateBtn.setText("Mark as " + nextStatus);

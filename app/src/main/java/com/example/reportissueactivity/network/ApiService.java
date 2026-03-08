@@ -30,9 +30,12 @@ public interface ApiService {
     @GET("issues")
     Call<List<Issue>> getIssues(@Query("department") String department);
 
+    @GET("issues")
+    Call<List<Issue>> getAllIssues();
+
     @GET("user-issues/{email}")
-    Call<List<Issue>> getUserIssues(@Path("email") String email);
+    Call<List<Issue>> getUserIssues(@Path(value = "email", encoded = true) String email);
 
     @PUT("update-status/{id}")
-    Call<Map<String, String>> updateStatus(@Path("id") int issueId, @Body Map<String, String> statusData);
+    Call<Map<String, String>> updateStatus(@Path("id") String issueId, @Body Map<String, String> statusData);
 }

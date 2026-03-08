@@ -30,7 +30,7 @@ public class SignupActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_signup);
 
-        // Standardized URL
+        // Standardized URL to match the provided Flask backend
         apiService = RetrofitClient
                 .getClient("https://pothole-backend-0je2.onrender.com/")
                 .create(ApiService.class);
@@ -47,31 +47,52 @@ public class SignupActivity extends AppCompatActivity {
             String passwordInput = password.getText().toString().trim();
             String confirmInput = confirmPassword.getText().toString().trim();
 
-            if(nameInput.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty()){
+            // Validation
+            if (nameInput.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty()) {
                 Toast.makeText(SignupActivity.this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!passwordInput.equals(confirmInput)) {
+                Toast.makeText(SignupActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            if (!emailInput.contains("@")) {
+                Toast.makeText(SignupActivity.this, "Please enter a valid email", Toast.LENGTH_SHORT).show();
                 return;
             }
 
             User user = new User(nameInput, emailInput, passwordInput);
 
-            // CHANGED: signup -> register to match Flask backend
+            // Using apiService.register to match @POST("register") in ApiService.java 
+            // and the /register route in the Flask backend
             Call<Map<String, String>> call = apiService.register(user);
             call.enqueue(new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
-                    if(response.isSuccessful()){
-                        Toast.makeText(SignupActivity.this, "Account Created Successfully! Please login.", Toast.LENGTH_LONG).show();
-                        Intent intent = new Intent(SignupActivity.this, MainActivity.class);
-                        startActivity(intent);
-                        finish();
+                    if (response.isSuccessful() && response.body() != null) {
+                        Map<String, String> responseBody = response.body();
+                        String status = responseBody.get("status");
+                        String message = responseBody.get("message");
+
+                        if ("success".equals(status)) {
+                            Toast.makeText(SignupActivity.this, "Account Created Successfully!", Toast.LENGTH_LONG).show();
+                            Intent intent = new Intent(SignupActivity.this, MainActivity.class);
+                            startActivity(intent);
+                            finish();
+                        } else {
+                            Toast.makeText(SignupActivity.this, "Error: " + message, Toast.LENGTH_LONG).show();
+                        }
                     } else {
-                        Toast.makeText(SignupActivity.this, "Registration Failed: " + response.code(), Toast.LENGTH_SHORT).show();
+                        Toast.makeText(SignupActivity.this, "Registration Failed (Code " + response.code() + ")", Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<Map<String, String>> call, Throwable t) {
-                    Toast.makeText(SignupActivity.this, "Connection Error", Toast.LENGTH_SHORT).show();
+                    Log.e("SignupError", "Connection failure", t);
+                    Toast.makeText(SignupActivity.this, "Connection Error: Check internet or backend", Toast.LENGTH_SHORT).show();
                 }
             });
         });

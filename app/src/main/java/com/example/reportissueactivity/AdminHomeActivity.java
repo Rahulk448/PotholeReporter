@@ -11,6 +11,7 @@ import com.example.reportissueactivity.network.ApiService;
 import com.example.reportissueactivity.network.RetrofitClient;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -50,12 +51,17 @@ public class AdminHomeActivity extends AppCompatActivity {
     }
 
     private void loadDepartmentIssues() {
-        apiService.getIssues().enqueue(new Callback<List<Issue>>() {
+        apiService.getAllIssues().enqueue(new Callback<List<Issue>>() {
             @Override
             public void onResponse(Call<List<Issue>> call, Response<List<Issue>> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     issueList.clear();
-                    updateStats(response.body());
+                    List<Issue> fetchedIssues = response.body();
+                    
+                    // Reverse the list to show latest issues on top
+                    Collections.reverse(fetchedIssues);
+                    
+                    updateStats(fetchedIssues);
                     adapter.notifyDataSetChanged();
                 }
             }
@@ -118,7 +124,7 @@ public class AdminHomeActivity extends AppCompatActivity {
         if (issueId != null) {
             Map<String, String> data = new HashMap<>();
             data.put("status", newStatus);
-            apiService.updateIssueStatus(issueId, data).enqueue(new Callback<Map<String, String>>() {
+            apiService.updateStatus(issueId, data).enqueue(new Callback<Map<String, String>>() {
                 @Override
                 public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                     if (response.isSuccessful()) {

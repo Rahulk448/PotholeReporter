@@ -39,6 +39,12 @@ public class Issue implements Parcelable {
     @SerializedName("status")
     private String status;
 
+    @SerializedName("created_at")
+    private String createdAt;
+
+    @SerializedName("user_email")
+    private String userEmail;
+
     public Issue(String issueType, String description, Bitmap image, LatLng location) {
         this.issueType = issueType;
         this.description = description;
@@ -61,6 +67,8 @@ public class Issue implements Parcelable {
         longitude = in.readDouble();
         locationName = in.readString();
         status = in.readString();
+        createdAt = in.readString();
+        userEmail = in.readString();
     }
 
     public static final Creator<Issue> CREATOR = new Creator<Issue>() {
@@ -77,6 +85,14 @@ public class Issue implements Parcelable {
 
     public String getId() {
         return mongoId != null ? mongoId : simpleId;
+    }
+    
+    public int getNumericId() {
+        try {
+            return Integer.parseInt(simpleId);
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public String getIssueType() {
@@ -120,6 +136,14 @@ public class Issue implements Parcelable {
         this.status = status;
     }
 
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public String getUserEmail() {
+        return userEmail;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -137,5 +161,7 @@ public class Issue implements Parcelable {
         dest.writeDouble(longitude);
         dest.writeString(locationName);
         dest.writeString(status);
+        dest.writeString(createdAt);
+        dest.writeString(userEmail);
     }
 }

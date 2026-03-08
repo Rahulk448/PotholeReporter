@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 import psycopg2
+import bcrypt
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 
@@ -111,8 +112,8 @@ def login():
     cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute(
-        "SELECT * FROM users WHERE email=%s AND password=%s",
-        (email, password)
+        "SELECT * FROM users WHERE email=%s ",
+        (email)
     )
 
     user = cur.fetchone()
@@ -120,7 +121,7 @@ def login():
     cur.close()
     conn.close()
 
-    if user:
+    if user and bcrypt.checkpw(password.encode("utf-8"), user["password"].encode("utf-8")):
         return jsonify({
             "status": "success",
             "role": user["role"],
