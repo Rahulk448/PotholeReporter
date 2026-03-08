@@ -260,7 +260,7 @@ def get_issues():
 # -----------------------
 # GET USER ISSUES (VIEW STATUS)
 # -----------------------
-@app.route("/user-issues/<email>", methods=["GET"])
+@app.route("/user-issues/<path:email>", methods=["GET"])
 def get_user_issues(email):
 
     conn = get_db_connection()
