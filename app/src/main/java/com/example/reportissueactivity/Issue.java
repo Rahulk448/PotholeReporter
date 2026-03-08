@@ -1,8 +1,10 @@
 package com.example.reportissueactivity;
 
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.util.Base64;
 
 import com.google.android.gms.maps.model.LatLng;
 import com.google.gson.annotations.SerializedName;
@@ -19,6 +21,9 @@ public class Issue implements Parcelable {
     
     @SerializedName("description")
     private String description;
+    
+    @SerializedName("image_url")
+    private String imageUrl; // This stores the Base64 string from backend
     
     private Bitmap image;
     
@@ -50,6 +55,7 @@ public class Issue implements Parcelable {
         simpleId = in.readString();
         issueType = in.readString();
         description = in.readString();
+        imageUrl = in.readString();
         image = in.readParcelable(Bitmap.class.getClassLoader());
         latitude = in.readDouble();
         longitude = in.readDouble();
@@ -82,7 +88,20 @@ public class Issue implements Parcelable {
     }
 
     public Bitmap getImage() {
-        return image;
+        if (image != null) return image;
+        if (imageUrl != null && !imageUrl.isEmpty()) {
+            try {
+                byte[] decodedString = Base64.decode(imageUrl, Base64.DEFAULT);
+                return BitmapFactory.decodeByteArray(decodedString, 0, decodedString.length);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
     }
 
     public LatLng getLocation() {
@@ -91,10 +110,6 @@ public class Issue implements Parcelable {
 
     public String getLocationName() {
         return locationName;
-    }
-
-    public void setLocationName(String locationName) {
-        this.locationName = locationName;
     }
 
     public String getStatus() {
@@ -116,6 +131,7 @@ public class Issue implements Parcelable {
         dest.writeString(simpleId);
         dest.writeString(issueType);
         dest.writeString(description);
+        dest.writeString(imageUrl);
         dest.writeParcelable(image, flags);
         dest.writeDouble(latitude);
         dest.writeDouble(longitude);

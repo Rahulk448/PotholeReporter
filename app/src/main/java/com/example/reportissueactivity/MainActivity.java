@@ -1,6 +1,7 @@
 package com.example.reportissueactivity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -64,12 +65,15 @@ public class MainActivity extends AppCompatActivity {
 
         // Departmental Admin Check
         if (emailInput.equals("pwd@road.com") && passwordInput.equals("pwd123")) {
+            saveUserEmail(emailInput);
             startAdminHome("PWD");
             return;
         } else if (emailInput.equals("police@traffic.com") && passwordInput.equals("police123")) {
+            saveUserEmail(emailInput);
             startAdminHome("Police");
             return;
         } else if (emailInput.equals("others@road.com") && passwordInput.equals("others123")) {
+            saveUserEmail(emailInput);
             startAdminHome("Others");
             return;
         }
@@ -81,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<Map<String, Object>> call, Response<Map<String, Object>> response) {
                 if (response.isSuccessful()) {
+                    saveUserEmail(emailInput); // SAVE EMAIL TO LOCAL STORAGE
                     Toast.makeText(MainActivity.this, "Login Successful", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(MainActivity.this, HomeActivity.class);
                     startActivity(intent);
@@ -95,6 +100,13 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(MainActivity.this, "Network Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void saveUserEmail(String userEmail) {
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putString("user_email", userEmail);
+        editor.apply();
     }
 
     private void startAdminHome(String department) {

@@ -10,15 +10,16 @@ import retrofit2.Call;
 import retrofit2.http.Body;
 import retrofit2.http.POST;
 import retrofit2.http.GET;
-import retrofit2.http.PATCH;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
+import retrofit2.http.Query;
 
 public interface ApiService {
     @POST("login")
     Call<Map<String, Object>> login(@Body User user);
 
-    @POST("signup")
-    Call<User> signup(@Body User user);
+    @POST("register")
+    Call<Map<String, String>> register(@Body User user);
 
     @POST("report-issue")
     Call<Map<String, String>> reportIssue(@Body Map<String, Object> issueData);
@@ -27,8 +28,11 @@ public interface ApiService {
     Call<Map<String, String>> forgotPassword(@Body Map<String, String> emailData);
 
     @GET("issues")
-    Call<List<Issue>> getIssues();
+    Call<List<Issue>> getIssues(@Query("department") String department);
 
-    @PATCH("issues/{id}/status")
-    Call<Map<String, String>> updateIssueStatus(@Path("id") String issueId, @Body Map<String, String> statusData);
+    @GET("user-issues/{email}")
+    Call<List<Issue>> getUserIssues(@Path("email") String email);
+
+    @PUT("update-status/{id}")
+    Call<Map<String, String>> updateStatus(@Path("id") int issueId, @Body Map<String, String> statusData);
 }

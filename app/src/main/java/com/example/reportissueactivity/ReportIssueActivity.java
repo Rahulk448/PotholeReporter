@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.ImageDecoder;
@@ -300,18 +301,23 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
             return;
         }
 
+        // Get user email from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("UserPrefs", MODE_PRIVATE);
+        String userEmail = prefs.getString("user_email", "anonymous@roadguardian.com");
+
         Map<String, Object> issueData = new HashMap<>();
         issueData.put("title", selectedIssue);
         issueData.put("description", description);
         issueData.put("latitude", currentLocation.latitude);
         issueData.put("longitude", currentLocation.longitude);
-        issueData.put("location_name", currentLocationName);
+        issueData.put("user_email", userEmail); // ALIGNED WITH BACKEND
 
         String issueType = selectedIssue.toLowerCase().replace(" ", "_");
         issueData.put("issue_type", issueType);
 
+        // Convert image to Base64 string and use the key expected by Flask
         if (selectedBitmap != null) {
-            issueData.put("image", encodeImage(selectedBitmap));
+            issueData.put("image_url", encodeImage(selectedBitmap)); // ALIGNED WITH BACKEND
         }
 
         ApiService apiService = RetrofitClient
@@ -326,7 +332,7 @@ public class ReportIssueActivity extends AppCompatActivity implements OnMapReady
                     Intent intent = new Intent(ReportIssueActivity.this, ViewissueActivity.class);
                     startActivity(intent);
                 } else {
-                    Toast.makeText(ReportIssueActivity.this, "Failed to report issue", Toast.LENGTH_LONG).show();
+                    Toast.makeText(ReportIssueActivity.this, "Failed to report issue: " + response.code(), Toast.LENGTH_LONG).show();
                 }
             }
 

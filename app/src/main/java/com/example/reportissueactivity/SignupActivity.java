@@ -13,7 +13,7 @@ import com.example.reportissueactivity.model.User;
 import com.example.reportissueactivity.network.ApiService;
 import com.example.reportissueactivity.network.RetrofitClient;
 
-import java.io.IOException;
+import java.util.Map;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -47,56 +47,31 @@ public class SignupActivity extends AppCompatActivity {
             String passwordInput = password.getText().toString().trim();
             String confirmInput = confirmPassword.getText().toString().trim();
 
-            if(nameInput.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty() || confirmInput.isEmpty()){
-                Toast.makeText(SignupActivity.this, "Please fill all fields", Toast.LENGTH_SHORT).show();
+            if(nameInput.isEmpty() || emailInput.isEmpty() || passwordInput.isEmpty()){
+                Toast.makeText(SignupActivity.this, "Please fill in all required fields", Toast.LENGTH_SHORT).show();
                 return;
             }
 
-            if(!emailInput.contains("@") || !emailInput.contains(".")){
-                Toast.makeText(SignupActivity.this, "Enter valid email", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            if(!passwordInput.equals(confirmInput)){
-                Toast.makeText(SignupActivity.this, "Passwords do not match", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            // Using the updated User model with @SerializedName
             User user = new User(nameInput, emailInput, passwordInput);
 
-            Call<User> call = apiService.signup(user);
-            call.enqueue(new Callback<User>() {
+            // CHANGED: signup -> register to match Flask backend
+            Call<Map<String, String>> call = apiService.register(user);
+            call.enqueue(new Callback<Map<String, String>>() {
                 @Override
-                public void onResponse(Call<User> call, Response<User> response) {
+                public void onResponse(Call<Map<String, String>> call, Response<Map<String, String>> response) {
                     if(response.isSuccessful()){
                         Toast.makeText(SignupActivity.this, "Account Created Successfully! Please login.", Toast.LENGTH_LONG).show();
                         Intent intent = new Intent(SignupActivity.this, MainActivity.class);
                         startActivity(intent);
                         finish();
                     } else {
-                        String errorMsg = "Signup Failed (" + response.code() + ")";
-                        try {
-                            if (response.errorBody() != null) {
-                                String rawError = response.errorBody().string();
-                                if (rawError.toLowerCase().contains("<!doctype html>") || rawError.toLowerCase().contains("<html>")) {
-                                    errorMsg = "Endpoint not found or server error (404/500)";
-                                } else {
-                                    errorMsg = rawError;
-                                }
-                            }
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        Log.e("SignupActivity", "Error: " + errorMsg);
-                        Toast.makeText(SignupActivity.this, errorMsg, Toast.LENGTH_LONG).show();
+                        Toast.makeText(SignupActivity.this, "Registration Failed: " + response.code(), Toast.LENGTH_SHORT).show();
                     }
                 }
 
                 @Override
-                public void onFailure(Call<User> call, Throwable t) {
-                    Log.e("SignupActivity", "Network Error: " + t.getMessage());
-                    Toast.makeText(SignupActivity.this, "Connection Error: Check your internet", Toast.LENGTH_SHORT).show();
+                public void onFailure(Call<Map<String, String>> call, Throwable t) {
+                    Toast.makeText(SignupActivity.this, "Connection Error", Toast.LENGTH_SHORT).show();
                 }
             });
         });
